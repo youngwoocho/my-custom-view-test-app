@@ -6,10 +6,26 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
+import kotlin.math.max
+import kotlin.math.min
 
 class RectWithText(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private var textToShow: String? = null
+    private var scaleFactor = 1F
+    private val scaleListener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScale(detector: ScaleGestureDetector?): Boolean {
+            scaleFactor *= detector?.scaleFactor ?: 1F
+
+            scaleFactor = max(0.1F, min(scaleFactor, 5F))
+
+            invalidate()
+            return true
+        }
+    }
+    private lateinit var scaleDetector: ScaleGestureDetector
 
     private val textPaint = Paint().apply {
         color = Color.GREEN
@@ -37,10 +53,20 @@ class RectWithText(context: Context, attrs: AttributeSet) : View(context, attrs)
                 recycle()
             }
         }
+
+        scaleDetector = ScaleGestureDetector(context, scaleListener)
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        scaleDetector.onTouchEvent(event)
+        return true
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+
+        canvas?.save()
+        canvas?.scale(scaleFactor, scaleFactor)
 
         xCoord = width / 4F
         yCoord = height / 4F
@@ -56,5 +82,7 @@ class RectWithText(context: Context, attrs: AttributeSet) : View(context, attrs)
             )
             it.drawRect(xCoord, yCoord, 3 * xCoord, 3 * yCoord, rectPaint)
         }
+
+        canvas?.restore()
     }
 }
